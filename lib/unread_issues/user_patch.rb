@@ -45,7 +45,7 @@ module UnreadIssues
       end
 
       def count_opened_assigned_issues(query = nil)
-        return num_issues = query.issues.count unless query.nil?
+        return query.issues.count unless query.nil?
         assigned_issues.joins(:status).where("#{IssueStatus.table_name}.is_closed = ?", false).size
       end
 
