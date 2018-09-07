@@ -8,7 +8,7 @@ module UnreadIssues
         alias_method_chain :issues, :uis
         alias_method_chain :joins_for_order_statement, :uis
         alias_method_chain :available_filters, :uis
-        alias_method_chain :issue_count_by_group, :uis
+        alias_method_chain :result_count_by_group, :uis
 
 
         base.add_available_column(QueryColumn.new(:uis_unread, sortable: Proc.new { "case when (#{IssueStatus.table_name}.is_closed = #{connection.quoted_false}) and uis_ir.id is null then 1 else 0 end" }, groupable: true, caption: :unread_issues_label_filter_unread))
