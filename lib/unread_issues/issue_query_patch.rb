@@ -25,7 +25,7 @@ module UnreadIssues
         issues_without_uis(options)
       end
 
-      def issue_count_by_group_with_uis
+      def result_count_by_group_with_uis
         if (group_by_statement == 'uis_unread')
           gr_b = "case when #{IssueStatus.table_name}.is_closed = #{connection.quoted_false} and uis_ir.id is null then 1 else 0 end"
           return Issue.visible.joins(:status, :project).where(statement).joins(joins_for_order_statement(gr_b)).group(gr_b).count
@@ -34,7 +34,7 @@ module UnreadIssues
           return Issue.visible.joins(:status, :project).where(statement).joins(joins_for_order_statement(gr_b)).group(gr_b).count
         end
 
-        return issue_count_by_group_without_uis
+        return result_count_by_group_without_uis
       end
 
       def sql_for_uis_unread_field(field, operator, value)
