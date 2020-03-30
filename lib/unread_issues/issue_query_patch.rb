@@ -5,11 +5,17 @@ module UnreadIssues
 
       base.class_eval do
 
-        alias_method_chain :issues, :uis
-        alias_method_chain :joins_for_order_statement, :uis
-        alias_method_chain :available_filters, :uis
-        alias_method_chain :result_count_by_group, :uis
+        alias_method :issues_without_uis, :issues
+        alias_method :issues, :issues_with_uis
 
+        alias_method :joins_for_order_statement_without_uis, :joins_for_order_statement
+        alias_method :joins_for_order_statement, :joins_for_order_statement_with_uis
+
+        alias_method :available_filters_without_uis, :available_filters
+        alias_method :available_filters, :available_filters_with_uis
+
+        alias_method :result_count_by_group_without_uis, :result_count_by_group
+        alias_method :result_count_by_group, :result_count_by_group_with_uis
 
         base.add_available_column(QueryColumn.new(:uis_unread, sortable: Proc.new { "case when (#{IssueStatus.table_name}.is_closed = #{connection.quoted_false}) and uis_ir.id is null then 1 else 0 end" }, groupable: true, caption: :unread_issues_label_filter_unread))
         base.add_available_column(QueryColumn.new(:uis_updated, sortable: Proc.new { "case when (#{IssueStatus.table_name}.is_closed = #{connection.quoted_false}) and uis_ir.read_date < #{Issue.table_name}.updated_on then 1 else 0 end" }, groupable: true, caption: :unread_issues_label_filter_updated))
