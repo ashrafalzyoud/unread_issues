@@ -4,7 +4,7 @@ module UnreadIssues
       base.send(:include, InstanceMethods)
 
       base.class_eval do
-        after_filter :make_issue_read, only: [:show]
+        after_action :make_issue_read, only: [:show]
       end
     end
 
