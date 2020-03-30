@@ -9,8 +9,8 @@ module UnreadIssues
         has_one :user_read, -> { where "#{IssueRead.table_name}.user_id = #{User.current.id}" }, class_name: 'IssueRead', foreign_key: 'issue_id'
         has_one :user_read_list, -> {where "#{IssueRead.table_name}.user_id = #{Issue.table_name}.assigned_to_id" }, class_name: 'IssueRead', foreign_key: 'issue_id'
 
-        alias_method :css_classes_without_unread_issues, :unread_issues
-        alias_method :unread_issues, :css_classes
+        alias_method :css_classes_without_unread_issues, :css_classes
+        alias_method :css_classes, :css_classes_with_unread_issues
 
       end
     end
