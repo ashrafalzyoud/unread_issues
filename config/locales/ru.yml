@@ -5,6 +5,8 @@ ru:
   unread_issues_label_filter_updated: 'Не прочитаны изменения'
   unread_issues:
     settings_label_assigned_issues: 'Запрос, определяющий все задачи на пользователе'
+    settings_label_unread_issues: 'Запрос, определяющий задачи, измененные с последнего прочтения пользователем'
+    settings_label_updated_issues: 'Запрос, определяющий новые задачи на пользователе'
     magic_my_page:
       label_changes_in_issues: 'Изменения в задачах'
       label_updated_query_id: 'Запрос, определяющий задачи, измененные с последнего прочтения пользователем'
@@ -16,3 +18,11 @@ ru:
   views_statistics: "Просмотры"
   label_unread_issues_employee: "Сотрудник"
   label_unread_issues_last_viewed_date: "Время последнего просмотра"
+  label_ui_my_issues: "Мои задачи"
+  label_ui_all_issues: "Все задачи"
+  label_ui_my_assigned_issues: "Мои задачи"
+  label_ui_my_unread_issues: "Новые задачи"
+  label_ui_my_updated_issues: "Измененненные задачи"
+  help: "Help"
+  home: "Home"
+  label_rmplus_logo: "RM+"

@@ -3,7 +3,7 @@
   magic_my_page_necessary_actions = settings['magic_my_page_necessary_actions'] || { }
   rm_version = Redmine::VERSION.to_a
   queries = nil
-  if (rm_version[0] >= 2 && rm_version[1] >= 4 || 3 == rm_version[0])
+  if ( (rm_version[0] == 2 && rm_version[1] >= 4) || rm_version[0] > 2)
     queries = IssueQuery.where("project_id IS NULL AND visibility=?", 2)
   else
     queries = IssueQuery.where("project_id IS NULL AND is_public = ?", true)
@@ -12,10 +12,17 @@
   queries = [['---', nil]] + queries.order('name').collect { |it| [it.name, it.id] }
 %>
 
-
 <p>
   <label><%= l('unread_issues.settings_label_assigned_issues') %>:</label>
   <%= select_tag 'settings[assigned_issues]', options_for_select(queries, settings['assigned_issues']) %>
+</p>
+<p>
+  <label><%= l('unread_issues.settings_label_unread_issues') %>:</label>
+  <%= select_tag 'settings[unread_issues]', options_for_select(queries, settings['unread_issues']) %>
+</p>
+<p>
+  <label><%= l('unread_issues.settings_label_updated_issues') %>:</label>
+  <%= select_tag 'settings[updated_issues]', options_for_select(queries, settings['updated_issues']) %>
 </p>
 
 <% if (Redmine::Plugin.installed?(:magic_my_page)) %>

@@ -10,71 +10,106 @@ module UnreadIssues
     end
 
     module InstanceMethods
-      def my_page_caption
+      def ui_my_page_caption
         s = "<span class='my_page'>#{l(:my_issues_on_my_page)}</span> "
-        s << "<span id='my_page_issues_count'>#{my_page_counts}</span>"
+        if Redmine::Plugin.installed?(:magic_my_page)
+          s << self.ui_my_page_counts
+        end
         s.html_safe
       end
 
-      def my_page_counts
+      def ui_my_issues_caption
+        s = "<span class='my_page'>#{l(:label_ui_my_issues)}</span>"
+        s << self.ui_my_page_counts
+        s.html_safe
+      end
+      def ui_my_assigned_issues_caption
         if Redmine::Plugin::registered_plugins.include?(:ajax_counters)
-          s = self.ajax_counter('/issue_reads/count/assigned', {period: 0, css: 'count'})
-          s << self.ajax_counter('/issue_reads/count/unread', {period: 0, css: 'count unread'})
-          s << self.ajax_counter('/issue_reads/count/updated', {period: 0, css: 'count updated'})
+          s = self.acl_ajax_counter('ui_assigned_issues_count', { period: 0, css: 'count', sync_count: Proc.new { @ui_issues_counts ||= self.ui_issues_counts; @ui_issues_counts[:assigned] }})
         else
-          query = get_custom_query
-          unread_i, updated_i = count_unread_issues(query), count_updated_issues(query)
-          s = "<span class=\"count\">#{count_opened_assigned_issues(query)}</span>"
+           @ui_issues_counts ||= self.ui_issues_counts
+           assigned_i = @ui_issues_counts[:assigned]
+          s = "<span class=\"count assigned\" title=\"#{l(:label_ui_my_assigned_issues)}\">#{assigned_i}</span>"
+        end
+        s.html_safe
+      end
+      def ui_my_unread_issues_caption
+        if Redmine::Plugin::registered_plugins.include?(:ajax_counters)
+          s = self.acl_ajax_counter('ui_unread_issues_count', { period: 0, css: 'count unread', sync_count: Proc.new { @ui_issues_counts ||= self.ui_issues_counts; @ui_issues_counts[:unread] }})
+        else
+           @ui_issues_counts ||= self.ui_issues_counts
+           unread_i = @ui_issues_counts[:unread]
+          s = "<span class=\"count unread\" title=\"#{l(:label_ui_my_unread_issues)}\">#{unread_i}</span>"
+        end
+        s.html_safe
+      end
+      def ui_my_updated_issues_caption
+        if Redmine::Plugin::registered_plugins.include?(:ajax_counters)
+          s = self.acl_ajax_counter('ui_updated_issues_count', { period: 0, css: 'count updated', sync_count: Proc.new { @ui_issues_counts ||= self.ui_issues_counts; @ui_issues_counts[:updated] }})
+        else
+           @ui_issues_counts ||= self.ui_issues_counts
+           updated_i = @ui_issues_counts[:updated]
+          s = "<span class=\"count updated\" title=\"#{l(:label_ui_my_updated_issues)}\">#{updated_i}</span>"
+        end
+        s.html_safe
+      end
+
+      def ui_my_page_counts
+        if Redmine::Plugin::registered_plugins.include?(:ajax_counters)
+          s = self.acl_ajax_counter('ui_assigned_issues_count', { period: 0, css: 'count', sync_count: Proc.new { @ui_issues_counts ||= self.ui_issues_counts; @ui_issues_counts[:assigned] }})
+          s << self.acl_ajax_counter('ui_unread_issues_count', { period: 0, css: 'count unread', sync_count: Proc.new { @ui_issues_counts ||= self.ui_issues_counts; @ui_issues_counts[:unread] }})
+          s << self.acl_ajax_counter('ui_updated_issues_count', { period: 0, css: 'count updated', sync_count: Proc.new { @ui_issues_counts ||= self.ui_issues_counts; @ui_issues_counts[:updated] }})
+        else
+          @ui_issues_counts ||= self.ui_issues_counts
+          assigned_i =  @ui_issues_counts[:assigned]
+          unread_i = @ui_issues_counts[:unread]
+          updated_i = @ui_issues_counts[:updated]
+          s = "<span class=\"count\">#{assigned_i}</span>"
           s << "<span class=\"count #{'unread' if unread_i > 0}\">#{unread_i}</span>"
           s << "<span class=\"count #{'updated' if updated_i > 0}\">#{updated_i}</span>"
         end
         s.html_safe
       end
 
-      def get_custom_query
-        query_id = (Setting.plugin_unread_issues || { })[:assigned_issues].to_i
-        return nil if 0 == query_id
+      def ui_assigned_issues_count(view_context=nil, params=nil, session={})
+        self.ui_issues_counts(:assigned)[:assigned]
+      end
+
+      def ui_unread_issues_count(view_context=nil, params=nil, session={})
+        self.ui_issues_counts(:unread)[:unread]
+      end
+
+      def ui_updated_issues_count(view_context=nil, params=nil, session={})
+        self.ui_issues_counts(:updated)[:updated]
+      end
+
+      def ui_issues_counts(count_keys=[])
+        count_keys = Array.wrap(count_keys)
+        if count_keys.blank?
+          count_keys = [:assigned, :unread, :updated]
+        end
+        counts = {}
+        count_keys.each do |k|
+          counts[k.to_sym] = 0
+        end
+
+        Setting.plugin_unread_issues = {} unless Setting.plugin_unread_issues.is_a?(Hash)
+        return counts if (Setting.plugin_unread_issues || {})['assigned_issues'].to_i == 0
+
         begin
-          query = IssueQuery.find(query_id)
+          query = IssueQuery.find((Setting.plugin_unread_issues || {})['assigned_issues'].to_i)
           query.group_by = ''
         rescue ActiveRecord::RecordNotFound
-          return nil
+          return counts
         end
-        return query unless query.nil?
-        nil
-      end
 
-      def count_opened_assigned_issues(query = nil)
-        return query.issues.count unless query.nil?
-        assigned_issues.joins(:status).where("#{IssueStatus.table_name}.is_closed = ?", false).size
-      end
+        return counts if query.blank?
 
-      def ui_unread_issues(query = nil)
-        return query.issues(conditions: "#{IssueRead.table_name}.read_date is null") unless query.nil?
-        Issue.joins(:status)
-             .joins("LEFT JOIN #{IssueRead.table_name} ir on ir.issue_id = #{Issue.table_name}.id and ir.user_id = #{User.current.id}")
-             .where("ir.read_date is null
-                 and #{Issue.table_name}.assigned_to_id = ?
-                 and #{IssueStatus.table_name}.is_closed = ?
-                    ", self.id, false)
-      end
+        counts[:assigned] = query.issue_ids.size if counts.has_key?(:assigned)
+        counts[:unread] = query.issue_ids(conditions: "#{IssueRead.table_name}.read_date is null").size if counts.has_key?(:unread)
+        counts[:updated] = query.issue_ids(conditions: "#{IssueRead.table_name}.read_date < #{Issue.table_name}.updated_on").size if counts.has_key?(:updated)
 
-      def count_unread_issues(query = nil)
-        self.ui_unread_issues(query).count
-      end
-
-      def ui_updated_issues(query = nil)
-        return query.issues(conditions: "#{IssueRead.table_name}.read_date < #{Issue.table_name}.updated_on") unless query.nil?
-        Issue.joins(:status, :issue_reads)
-             .where("#{IssueRead.table_name}.read_date < #{Issue.table_name}.updated_on
-                 and #{IssueRead.table_name}.user_id = :user_id
-                 and #{Issue.table_name}.assigned_to_id = :user_id
-                 and #{IssueStatus.table_name}.is_closed = :false_flag
-                    ", user_id: self.id, false_flag: false)
-      end
-
-      def count_updated_issues(query = nil)
-        self.ui_updated_issues(query).count
+        counts
       end
     end
   end

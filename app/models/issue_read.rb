@@ -1,6 +1,5 @@
 class IssueRead < ActiveRecord::Base
-  unloadable
+  #unloadable
   belongs_to :issue
   belongs_to :user
-
 end

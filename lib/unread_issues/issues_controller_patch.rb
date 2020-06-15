@@ -4,16 +4,14 @@ module UnreadIssues
       base.send(:include, InstanceMethods)
 
       base.class_eval do
-        after_action :make_issue_read, only: [:show]
+        after_action :ui_make_issue_read, only: [:show]
       end
     end
 
     module InstanceMethods
-
-      def make_issue_read
-        issue_read = IssueRead.where(user_id: User.current.id, issue_id: @issue.id).first_or_create
-        issue_read.read_date = Time.now
-        issue_read.save
+      private
+      def ui_make_issue_read
+        @issue.ui_make_issue_read
       end
     end
   end

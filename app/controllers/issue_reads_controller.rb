@@ -33,7 +33,15 @@ class IssueReadsController < ApplicationController
 
   def view_stats
     @issue = Issue.find(params[:id])
-    @issue_reads = @issue.issue_reads
+    if Redmine::Plugin.installed?(:redmine_issue_tabs) &&
+       (
+        User.current.admin? || (Redmine::Plugin.installed?(:global_roles) && User.current.global_permission_to?(:view_issue_view_stats)) ||
+        (!Redmine::Plugin.installed?(:global_roles) && User.current.allowed_to?(:view_issue_view_stats, @issue.project))
+       )
+      @issue_reads = @issue.issue_reads
+    else
+      render_403
+    end
   end
 
   def mm_page_counters
@@ -78,10 +86,10 @@ class IssueReadsController < ApplicationController
         counts = { }
 
         query.issues.each do |it|
-          unless (it.user_read_list.nil?)
-            counts[it.user_read_list.read_date.to_date] ||= { }
-            counts[it.user_read_list.read_date.to_date][it.assigned_to] ||= 0
-            counts[it.user_read_list.read_date.to_date][it.assigned_to] += 1
+          unless (it.ui_user_read.nil?)
+            counts[it.ui_user_read.read_date.to_date] ||= { }
+            counts[it.ui_user_read.read_date.to_date][it.assigned_to] ||= 0
+            counts[it.ui_user_read.read_date.to_date][it.assigned_to] += 1
           end
         end
       when 'new_issues'

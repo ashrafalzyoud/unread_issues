@@ -1,5 +1,7 @@
 <% if (Redmine::Plugin.installed?(:redmine_issue_tabs)) %>
-  <% if User.current.global_permission_to?(:view_issue_view_stats) %>
+  <% if User.current.admin? ||
+        (Redmine::Plugin.installed?(:global_roles) && User.current.global_permission_to?(:view_issue_view_stats)) ||
+        (!Redmine::Plugin.installed?(:global_roles) && User.current.allowed_to?(:view_issue_view_stats, @issue.project)) %>
     <script type="text/javascript">
       RMPlus.TABS.http_tab = '<%= params[:tab] %>';
       $(document).ready(function () {
