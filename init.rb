@@ -1,10 +1,12 @@
 Redmine::Plugin.register :unread_issues do
   name 'Unread Issues plugin'
-  author 'Vladimir Pitin, Danil Kukhlevskiy, !Lucky'
+  author 'Vladimir Pitin, Danil Kukhlevskiy, !Lucky, Tilman19'
   description 'This is a plugin for Redmine, that marks unread issues'
-    version '0.0.2'
+    version '0.0.3'
     url 'http://rmplus.pro/redmine/plugins/unread_issues'
     author_url 'http://rmplus.pro'
+  directory __dir__
+  requires_redmine version_or_higher: '4.0'
 
   settings partial: 'unread_issues/settings',
     default: {
@@ -25,8 +27,9 @@ Redmine::Plugin.register :unread_issues do
   menu :top_menu, :ui_my_updated_issues, :ui_my_updated_issues_url, :caption => Proc.new { User.current.ui_my_updated_issues_caption }, after: :ui_my_unread_issues, if: Proc.new { User.current.logged? }
 end
 
-Rails.application.config.to_prepare do
-  require 'unread_issues/hooks_views'
+def init()
+  require File.expand_path('lib/unread_issues/hooks_views.rb', __dir__)
+
 
   unless Issue.included_modules.include?(UnreadIssues::IssuePatch)
     Issue.send(:include, UnreadIssues::IssuePatch)
@@ -49,15 +52,12 @@ Rails.application.config.to_prepare do
   #Acl::Settings.append_setting('enable_ajax_counters', :unread_issues)
 end
 
-Rails.application.config.after_initialize do
-#  plugins = { a_common_libs: '2.5.4' }
-  plugins = { }
-  plugin = Redmine::Plugin.find(:unread_issues)
-  plugins.each do |k,v|
-  begin
-    plugin.requires_redmine_plugin(k, v)
-    rescue Redmine::PluginNotFound => ex
-      raise(Redmine::PluginNotFound, "Plugin requires #{k} not found")
+if Rails.version > '6.0'
+    init()
+    return
+else
+    Rails.configuration.to_prepare do
+        init()
     end
-  end
 end
+
